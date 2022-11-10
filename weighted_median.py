@@ -82,7 +82,6 @@ def exponential_utility(df):
 
 df_util = exponential_utility(df_slope)
 
-
 def dp_wls(df, epsilon = 1):
     n = np.shape(df)[1]
     slopes = df[0][0:n-2]
@@ -92,6 +91,4 @@ def dp_wls(df, epsilon = 1):
     norm_probs = [item/sum_probs for item in probs]
     return(np.random.choice(slopes,10,p=norm_probs))
     
-#
-
 print(dp_wls(df_util))
