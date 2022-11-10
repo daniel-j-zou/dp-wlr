@@ -7,7 +7,7 @@ from scipy import stats
 # Mini-example
 
 np.random.seed(0)
-n = 5
+n = 30
 x = np.linspace(-1,1,num=n)
 y = x + np.random.normal(size=n)
 w = np.random.uniform(0, 1, size=n)
@@ -68,8 +68,6 @@ def util_naive(slopes, input, cumsum, totalsum, n):
     return(-distance)
 
 
-
-
 def exponential_utility(df):
     n = np.shape(df)[1]
     cumsum = np.cumsum(df[1])
@@ -82,13 +80,14 @@ def exponential_utility(df):
 
 df_util = exponential_utility(df_slope)
 
-def dp_wls(df, epsilon = 1):
+
+def fixed_weights_dp_sample(df, epsilon = 1):
     n = np.shape(df)[1]
     slopes = df[0][0:n-2]
     utils = df[1][0:n-2]
-    probs = [math.exp(epsilon * util/2) for util in utils]
+    probs = [math.exp(epsilon / (n-1) * util/2) for util in utils]
     sum_probs = sum(probs)
     norm_probs = [item/sum_probs for item in probs]
     return(np.random.choice(slopes,10,p=norm_probs))
     
-print(dp_wls(df_util))
+print(fixed_weights_dp_sample(df_util))
