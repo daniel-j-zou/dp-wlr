@@ -17,7 +17,7 @@ def private_wlr(df, k, n, epsilon, weighted = True, intercept = False, intercept
     # Change all weights to 1 if not weighted
 
     if not weighted:
-        df[1] = np.ones(n)
+        df[2] = np.ones(n)
 
     # Create slope matrix    
 
@@ -46,7 +46,7 @@ def non_private_wlr(df, k, n, weighted = True, intercept = False,
     # Change all weights to 1 if not weighted
 
     if not weighted:
-        df[1] = np.ones(n)
+        df[2] = np.ones(n)
     
     slope_matrix = create_slope_matrix(df, k, n, lower_bound, upper_bound)
     
