@@ -2,7 +2,7 @@
 
 import numpy as np
 import medians
-from slope_gen import create_slope_matrix
+from slope_gen import create_slope_matrix, create_point_matrix
 import statsmodels.api as sm
 from statistics import mean, pstdev, median
 
@@ -128,3 +128,31 @@ def non_private_wlr(df, k, n, weighted = True, intercept = False,
 
 
 
+
+# Runs private_point_wlr as in the 2020 paper
+# Inputs: dataset, k - number of matchings, n - sample size of dataset,
+# weighted - whether weighted or not, intercept - whether intercept, 
+# 
+# Output: private est, 0, wlr est, 0
+
+def private_point_wlr(df, k, n, epsilon, weighted = True, intercept = False, 
+                      lower_bound = 0, upper_bound = 1):
+
+    # Change all weights to 1 if not weighted
+
+    if not weighted:
+        df[2] = np.ones(n)
+    
+    point_matrix = create_point_matrix(df, k, n, lower_bound, upper_bound)
+
+    if k == 0:
+            k = n-1
+    privacy_factor = 2 * k
+
+    private_val = medians.private_weighted_median_exp(point_matrix, epsilon/(privacy_factor*2))
+    new_x = sm.add_constant(df[0])
+    model = sm.OLS(df[1], new_x)
+    results = model.fit()
+    return [private_val, 0, (results.params)[1] * 0.25 + (results.params)[0], 0]
+
+    

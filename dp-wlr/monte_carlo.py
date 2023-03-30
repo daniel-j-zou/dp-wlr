@@ -7,7 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from statistics import mean, pstdev
-from run_wlr import private_wlr, non_private_wlr
+from run_wlr import private_wlr, non_private_wlr, private_point_wlr
 import os
 import statsmodels.api as sm
 
@@ -77,6 +77,16 @@ def data_gen(ns, ks, epsilons, tests, intercept_eps, iterations, data_function,
             df[i][7] = inter[2]
             df[i][8] = inter[3]
 
+        # 2020 paper private point estimate
+
+        if params[3] == 4:
+            inter = private_point_wlr(dfi, params[1], params[0], params[2], True, 
+                False, 0, 1)
+            df[i][5] = inter[0]
+            df[i][6] = inter[1]
+            df[i][7] = inter[2]
+            df[i][8] = inter[3]
+
         
 
 
@@ -123,15 +133,22 @@ def summary_statistics(df, iterations, fn, intercept = False):
         newdf = df[[i for i in range(0, n, iterations)],:]
         df = np.transpose(df)
         for i in range(diff):
-            slope_data = df[5][i*iterations : (i+1) * iterations - 1]
-            inter_data = df[6][i*iterations : (i+1) * iterations - 1]
-            ols_slope_data = df[7][i*iterations : (i+1) * iterations - 1]
-            ols_inter_data = df[8][i*iterations : (i+1) * iterations - 1]
-            point_est = slope_data * 0.25 + inter_data
-            ols_point_est = ols_slope_data * 0.25 + ols_inter_data
-            point_summary = (np.quantile(point_est,0.84) - np.quantile(point_est,0.16))
-            ols_summary = (np.quantile(ols_point_est,0.84) - np.quantile(ols_point_est,0.16))
-            newdf[i][5] = point_summary / ols_summary
+            if int(df[3][i*iterations]) == 4:
+                point_data = df[5][i*iterations : (i+1) * iterations - 1]
+                ols_point_data = df[7][i*iterations : (i+1) * iterations - 1]
+                point_summary = (np.quantile(point_data,0.84) - np.quantile(point_data,0.16))
+                ols_summary = (np.quantile(ols_point_data,0.84) - np.quantile(ols_point_data,0.16))
+                newdf[i][5] = point_summary / ols_summary
+            else:    
+                slope_data = df[5][i*iterations : (i+1) * iterations - 1]
+                inter_data = df[6][i*iterations : (i+1) * iterations - 1]
+                ols_slope_data = df[7][i*iterations : (i+1) * iterations - 1]
+                ols_inter_data = df[8][i*iterations : (i+1) * iterations - 1]
+                point_est = slope_data * 0.25 + inter_data
+                ols_point_est = ols_slope_data * 0.25 + ols_inter_data
+                point_summary = (np.quantile(point_est,0.84) - np.quantile(point_est,0.16))
+                ols_summary = (np.quantile(ols_point_est,0.84) - np.quantile(ols_point_est,0.16))
+                newdf[i][5] = point_summary / ols_summary
         
         newdf = np.around(newdf, 3)
         np.savetxt('test.csv',newdf, delimiter=',', fmt='%s')
@@ -144,6 +161,8 @@ def summary_statistics(df, iterations, fn, intercept = False):
     for i in range(diff):
         slope_data = df[5][i*iterations : (i+1) * iterations - 1]
         slope_summary = fn(slope_data)
+        # ols_slope_data = df[7][i*iterations : (i+1) * iterations - 1]
+        # ols_slope_summary = fn(ols_slope_data)
         newdf[i][5] = slope_summary
     if intercept:
         for i in range(diff):
@@ -168,7 +187,7 @@ def plot_n(df, ns, ks, epsilons, tests, intercept_eps, iterations, data_function
 
     color = iter(plt.cm.rainbow(np.linspace(0, 1, np.shape(choices)[0]+2)))
     plt.xscale('log')
-    plt.ylim(0.001,5)
+    #plt.ylim(0.001,5)
     
 
     for setting in choices:
@@ -205,6 +224,8 @@ def test_function(n):
     return dfi
 
 # Defining paper data generation function
+# x values are by definition in [0,1]
+# y values are clipped to [0,1]
 # Inputs: n - sample size
 
 def paper_function(n):
@@ -214,11 +235,30 @@ def paper_function(n):
     xi = np.random.uniform(0,1,n)
     errors = np.random.normal(0, 0.187, size=n)
     yi = slope * xi + intercept + errors
+    yi = np.clip(yi, 0, 1)
     wi = np.random.uniform(0.1, 1, size=n)
     dfi = np.array([xi,yi,wi])
     return dfi
 
 
+def lenny_dgp(n):
+    xi = np.random.normal(size=n)
+    
+    # Treatment, D
+    prob = np.exp(0.5 * xi) / (1 + np.exp(0.5 * xi))
+    di = 1 * (np.random.uniform(size=n) < prob)
+    
+    # Outcome, Y
+    yi = xi + np.random.normal(size=n)  # True ATT=0
+
+    wi = np.zeros(n)
+    
+    wi[di == 1] = 1 / sum(di == 1)
+    wi[di == 0] = prob[di == 0] / (1 - prob[di == 0])
+    wi[di == 0] = wi[di == 0] / sum(wi[di == 0])
+
+    dfi = np.array([di,yi,wi])
+    return dfi
     
 
 if __name__ == "__main__":
@@ -227,15 +267,15 @@ if __name__ == "__main__":
 
     zns = [50,100,300,1000]
     zks = [10]
-    zes = [1.]
-    zts = [0,1]
-    zies = [30,50] 
-    ziter = 5000
+    zes = [2.]
+    zts = [0,1,2,3,4]
+    zies = [50] 
+    ziter = 100
     intercept_bool = True
     data_name = "D:\Reed College\Thesis\dp-wlr-1\data\data[50, 100, 300, 1000][10][2.0][0, 1, 2, 3][0.5]500.npy"
 
     df_play = data_gen(zns, zks, zes, zts, zies, ziter, paper_function, intercept_bool, -1,1)
-    df_play = summary_statistics(df_play, ziter, "paper_point", intercept = True)
-    plot_n(df_play, zns, zks, zes, zts, zies, ziter, "paper_point", intercept = True)
+    df_play = summary_statistics(df_play, ziter, "paper_point", intercept_bool)
+    plot_n(df_play, zns, zks, zes, zts, zies, ziter, "paper_confint", intercept_bool)
     t1 = time.time()
-    print("Time taken: " + str(t1-t0))
+    print("Time taken: " + str(t1-t0)) 
