@@ -149,7 +149,7 @@ def private_point_wlr(df, k, n, epsilon, weighted = True, intercept = False,
             k = n-1
     privacy_factor = 2 * k
 
-    private_val = medians.private_weighted_median_exp(point_matrix, epsilon/(privacy_factor*2))
+    private_val = medians.private_weighted_median_exp(point_matrix, epsilon/(privacy_factor))
     new_x = sm.add_constant(df[0])
     model = sm.OLS(df[1], new_x)
     results = model.fit()

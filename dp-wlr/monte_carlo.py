@@ -265,17 +265,17 @@ if __name__ == "__main__":
     
     t0 = time.time()
 
-    zns = [50,100,300,1000]
+    zns = [1000]
     zks = [10]
-    zes = [2.]
-    zts = [0,1,2,3,4]
+    zes = [1.]
+    zts = [2,3]
     zies = [50] 
-    ziter = 100
+    ziter = 1000
     intercept_bool = True
     data_name = "D:\Reed College\Thesis\dp-wlr-1\data\data[50, 100, 300, 1000][10][2.0][0, 1, 2, 3][0.5]500.npy"
 
-    df_play = data_gen(zns, zks, zes, zts, zies, ziter, paper_function, intercept_bool, -1,1)
-    df_play = summary_statistics(df_play, ziter, "paper_point", intercept_bool)
-    plot_n(df_play, zns, zks, zes, zts, zies, ziter, "paper_confint", intercept_bool)
+    df_play = data_gen(zns, zks, zes, zts, zies, ziter, lenny_dgp, intercept_bool, -1,1)
+    df_play = summary_statistics(df_play, ziter, mean, intercept_bool)
+    plot_n(df_play, zns, zks, zes, zts, zies, ziter, "lenny_mean", intercept_bool)
     t1 = time.time()
     print("Time taken: " + str(t1-t0)) 
